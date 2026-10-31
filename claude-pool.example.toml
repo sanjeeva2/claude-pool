@@ -1,0 +1,58 @@
+# claude-pool configuration.
+# Copy to claude-pool.toml and adjust. Any secret can be written literally,
+# as "env:VAR_NAME", or as "file:/path/to/secret".
+
+[server]
+listen = "127.0.0.1:8787"          # use 0.0.0.0:8787 to serve your whole network
+upstream = "https://api.anthropic.com"
+admin_token = "env:POOL_ADMIN_TOKEN" # protects /pool/stats and /metrics (optional)
+max_attempts = 3                    # accounts tried per request before giving up
+max_body_mb = 32
+connect_timeout_secs = 10
+read_timeout_secs = 600             # idle timeout between bytes; long streams are fine
+state_file = "claude-pool-state.json"
+snapshot_interval_secs = 30
+affinity = true                     # keep a conversation on one account for prompt-cache hits
+affinity_min_headroom = 0.05
+cooldown_base_secs = 2              # backoff after 5xx / connect errors (doubles each time)
+cooldown_max_secs = 120
+auth_failure_disable_secs = 3600    # an account whose key returns 401 is parked this long
+default_anthropic_version = "2023-06-01"
+expose_account_header = true        # adds `x-claude-pool-account` to responses
+
+# One entry per Claude API account (organization, workspace or key) in the pool.
+[[accounts]]
+name = "team-main"
+api_key = "env:CLAUDE_KEY_MAIN"
+admin_key = "env:CLAUDE_ADMIN_MAIN"  # optional: enables `claude-pool usage`
+weight = 2                           # relative share of traffic
+max_concurrency = 64                 # 0 = unlimited
+monthly_budget_usd = 1000            # stop routing here once estimated spend reaches this
+
+[[accounts]]
+name = "team-backup"
+api_key = "env:CLAUDE_KEY_BACKUP"
+weight = 1
+
+# Team members. Each gets their own token (generate with `claude-pool gen-token`).
+# With no [[clients]] the gateway is open to anyone who can reach it.
+[[clients]]
+name = "alice"
+token = "env:POOL_TOKEN_ALICE"
+monthly_budget_usd = 200
+
+[[clients]]
+name = "bob"
+token = "env:POOL_TOKEN_BOB"
+
+[alerts]
+webhook_url = "env:SLACK_WEBHOOK_URL"  # Slack-compatible; alerts are always logged too
+check_interval_secs = 30
+headroom_threshold = 0.10              # warn when an account is within 10% of its rate limit
+budget_thresholds = [0.8, 1.0]
+
+# Optional price overrides, USD per million tokens. Prefix match, longest wins.
+# [pricing."claude-opus-5-5"]
+# input = 4.0
+# output = 20.0
+# cache_read = 0.20
