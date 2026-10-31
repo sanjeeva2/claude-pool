@@ -1,5 +1,7 @@
 /target
 claude-pool.toml
 claude-pool-state.json
+claude-sync-hub.toml
+claude-sync-hub/
 *.tmp
 .env

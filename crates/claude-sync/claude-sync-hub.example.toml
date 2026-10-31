@@ -1,0 +1,14 @@
+# claude-sync hub configuration. Tokens can be literal, env:VAR or file:/path.
+# Generate tokens with `claude-sync gen-token`.
+listen = "0.0.0.0:8790"     # put behind HTTPS (e.g. Caddy/nginx) outside a trusted LAN
+data_dir = "claude-sync-hub"
+block_secrets = true        # reject publishes containing credential-looking strings
+
+[[members]]
+name = "alice"
+token = "env:TOKEN_ALICE"
+role = "publisher"          # can publish and roll back
+
+[[members]]
+name = "bob"
+token = "env:TOKEN_BOB"     # role defaults to "member"
